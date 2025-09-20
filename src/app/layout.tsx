@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import HeaderNav from "@/components/header-nav";
 
 
 export const metadata: Metadata = {
@@ -15,6 +16,11 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
+                <header className="border-b">
+                    <div className="container mx-auto flex h-24 items-center justify-center px-4">
+                        <HeaderNav />
+                    </div>
+                </header>
                 {children}
             </body>
         </html>
