@@ -1,4 +1,4 @@
-const Post = require('../models/post.model');
+const Post = require('../../src/models/post.model');
 
 export const createPost = async (req, res) => {
   try {
@@ -9,7 +9,7 @@ export const createPost = async (req, res) => {
   }
 };
 
-export const getPostsByUser = async (req, res) => {
+export const getPosts = async (req, res) => {
   try {
     const posts = await Post.find(req);
     res.status(200).json(posts);
