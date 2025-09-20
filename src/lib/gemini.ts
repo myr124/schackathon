@@ -154,7 +154,7 @@ export async function runGemini(input: string) {
     apiKey: process.env.GEMINI_API_KEY,
   });
 
-  const model = "models/gemini-2.5-flash-preview";
+  const model = "models/gemini-2.0-flash-live-001";
 
   const config = {
     responseModalities: [Modality.AUDIO],
