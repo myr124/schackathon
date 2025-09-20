@@ -36,7 +36,7 @@ function NavButton({
 
 export default function HeaderNav() {
     return (
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-20">
             <NavButton href="/"><Home></Home></NavButton>
             <NavButton href="/matches"><Heart></Heart></NavButton>
             <NavButton href="/messages"><MessageCircle></MessageCircle></NavButton>
