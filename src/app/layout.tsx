@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import HeaderNav from "@/components/header-nav";
+import { Nunito } from "next/font/google";
+
+
+const nunito = Nunito({
+    subsets: ['latin']
+})
 
 
 export const metadata: Metadata = {
@@ -14,7 +20,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" className={nunito.className}>
             <body>
                 <header className="border-b">
                     <div className="container mx-auto flex h-24 items-center justify-center px-4">
