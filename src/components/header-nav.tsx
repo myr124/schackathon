@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Heart, Home, LogInIcon, MessageCircle, User } from "lucide-react";
+import { Heart, Home, LogInIcon, MessageCircle, Sparkles, User } from "lucide-react";
 
 function NavButton({
     href,
@@ -40,6 +40,7 @@ export default function HeaderNav() {
             <NavButton href="/"><Home /></NavButton>
             <NavButton href="/matches"><Heart /></NavButton>
             <NavButton href="/messages"><MessageCircle /></NavButton>
+            <NavButton href="/ai-chat"><Sparkles /></NavButton>
             <NavButton href="/login"><LogInIcon></LogInIcon></NavButton>
             <NavButton href="/account"><User></User></NavButton>
         </nav>
