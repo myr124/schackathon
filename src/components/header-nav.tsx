@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Heart, Home, MessageCircle } from "lucide-react";
+import { Heart, Home, LogInIcon, MessageCircle, Sparkles, User } from "lucide-react";
 
 function NavButton({
     href,
