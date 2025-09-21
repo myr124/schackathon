@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const { input } = await req.json();
+    const { input, history } = await req.json();
     if (!input || typeof input !== "string") {
       return new Response(
         JSON.stringify({ error: "Missing or invalid 'input' string." }),
@@ -16,7 +16,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const { texts } = await runGemini(input);
+    const rawHistory: any = history;
+    const hist = Array.isArray(rawHistory)
+      ? rawHistory
+          .filter(
+            (m: any) =>
+              m &&
+              typeof m.content === "string" &&
+              (m.role === "user" || m.role === "model" || m.role === "system")
+          )
+          .map((m: any) => ({ role: m.role, content: m.content }))
+      : undefined;
+
+    const { texts } = await runGemini(input, hist);
     return new Response(JSON.stringify({ texts }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

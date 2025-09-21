@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { io, Socket } from "socket.io-client";
 
+type ChatMessage = { role: "user" | "model" | "system"; content: string };
+
 export default function Home() {
     const [connecting, setConnecting] = useState(false);
     const [recording, setRecording] = useState(false);
@@ -11,6 +13,7 @@ export default function Home() {
     const [interim, setInterim] = useState<string>("");
     const [finals, setFinals] = useState<string[]>([]);
     const [texts, setTexts] = useState<string[]>([]);
+    const [history, setHistory] = useState<ChatMessage[]>([]);
     const [status, setStatus] = useState<"idle" | "listening" | "processing" | "speaking">("idle");
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -170,7 +173,7 @@ export default function Home() {
         try {
             setTexts([]);
             setStatus("processing");
-            await streamGeminiAudio(finalText);
+            await streamGeminiAudio(finalText, history);
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Gemini streaming failed";
             setError(msg);
@@ -194,11 +197,11 @@ export default function Home() {
         streamRef.current = null;
     }
 
-    async function streamGeminiAudio(input: string) {
+    async function streamGeminiAudio(input: string, historyArr: ChatMessage[]) {
         const res = await fetch("/api/gemini/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ input }),
+            body: JSON.stringify({ input, history: historyArr }),
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
@@ -212,6 +215,7 @@ export default function Home() {
         const decoder = new TextDecoder();
         let buf = "";
         let receivedAny = false;
+        let replyChunks: string[] = [];
 
         // Ensure audio context is ready
         ensureAudioContext();
@@ -247,6 +251,7 @@ export default function Home() {
                         }
                     } else if (obj.type === "text" && typeof obj.text === "string") {
                         receivedAny = true;
+                        replyChunks.push(obj.text);
                         setTexts((prev) => [...prev, obj.text]);
                     } else if (obj.type === "error") {
                         throw new Error(String(obj.message || "Stream error"));
@@ -257,19 +262,23 @@ export default function Home() {
                         if (waitMs > 0) {
                             await new Promise((r) => setTimeout(r, waitMs));
                         }
+
+                        let replyText = replyChunks.join(" ").trim();
+
                         // Fallback: if no audio/text chunks were received, call non-streaming Gemini and speak via Web Speech
                         if (!receivedAny) {
                             try {
                                 const r2 = await fetch("/api/gemini", {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ input }),
+                                    body: JSON.stringify({ input, history: historyArr }),
                                 });
                                 const d2 = await r2.json().catch(() => ({}));
                                 if (r2.ok && Array.isArray(d2?.texts) && d2.texts.length > 0) {
                                     setTexts((prev) => [...prev, ...d2.texts]);
+                                    replyText = d2.texts.join(" ");
                                     try {
-                                        await speakText(d2.texts.join(" "));
+                                        await speakText(replyText);
                                     } catch {
                                         // no-op
                                     }
@@ -277,6 +286,14 @@ export default function Home() {
                             } catch (e) {
                                 console.warn("Fallback Gemini text failed:", e);
                             }
+                        }
+
+                        if (replyText) {
+                            setHistory((prev) => [
+                                ...prev,
+                                { role: "user", content: input },
+                                { role: "model", content: replyText },
+                            ]);
                         }
                         return;
                     }
@@ -452,7 +469,7 @@ export default function Home() {
 
         // Stream Gemini audio reply and wait until playback finishes
         try {
-            await streamGeminiAudio(utterance);
+            await streamGeminiAudio(utterance, history);
         } catch (e: any) {
             const msg = e instanceof Error ? e.message : String(e ?? "Gemini streaming failed");
             setError(msg);

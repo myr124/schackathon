@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const { input } = await req.json();
+    const { input, history } = await req.json();
     if (!input || typeof input !== "string") {
       return new Response(
         JSON.stringify({ error: "Missing or invalid 'input' string." }),
@@ -21,6 +21,46 @@ export async function POST(req: Request) {
         }
       );
     }
+
+    // Normalize and validate optional chat history
+    const rawHistory: any = history;
+    const hist = Array.isArray(rawHistory)
+      ? rawHistory
+          .filter(
+            (m: any) =>
+              m &&
+              typeof m.content === "string" &&
+              (m.role === "user" || m.role === "model" || m.role === "system")
+          )
+          .map((m: any) => ({ role: m.role, content: m.content }))
+      : undefined;
+
+    function buildPromptFromHistory(
+      historyArr:
+        | { role: "user" | "model" | "system"; content: string }[]
+        | undefined,
+      latest: string
+    ): string {
+      const MAX_TURNS = 8;
+      const turns = Array.isArray(historyArr)
+        ? historyArr.slice(-MAX_TURNS)
+        : [];
+      const lines: string[] = [];
+      for (const m of turns) {
+        const role =
+          m.role === "model"
+            ? "Assistant"
+            : m.role === "system"
+            ? "System"
+            : "User";
+        lines.push(`${role}: ${m.content}`);
+      }
+      lines.push(`User: ${latest}`);
+      lines.push("Assistant:");
+      return lines.join("\n");
+    }
+
+    const prompt = buildPromptFromHistory(hist, input);
 
     const encoder = new TextEncoder();
 
@@ -128,7 +168,7 @@ export async function POST(req: Request) {
           });
 
           session.sendClientContent({
-            turns: [input],
+            turns: [prompt],
           });
         } catch (e: unknown) {
           const msg =
