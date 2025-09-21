@@ -59,7 +59,7 @@ const QuestionsDialog = () => {
         continuousWaveformDuration: 30,
       })
     );
-    recordPluginRef.current.on("record-end", (blob: Blob) => {
+    recordPluginRef.current.on("record-end", async (blob: Blob) => {
       console.log("record-end", blob?.size, blob?.type);
       setAudioBlob(blob);
       setAudioURL(URL.createObjectURL(blob));
@@ -68,6 +68,25 @@ const QuestionsDialog = () => {
       setProgress("00:00");
       // Switch to playback view
       createPlayer(blob);
+
+      // Save with question as key and blob as value
+      try {
+        const formData = new FormData();
+        formData.append("audio", blob, `audio-${Date.now()}.webm`);
+        formData.append("question", questions[step]);
+        console.log("Uploading audio to /api/audio", {
+          question: questions[step],
+          blobSize: blob.size,
+        });
+        const res = await fetch("/api/audio", {
+          method: "POST",
+          body: formData,
+        });
+        const json = await res.json();
+        console.log("audio response", json);
+      } catch (err) {
+        console.error("Error uploading audio", err);
+      }
     });
     recordPluginRef.current.on("record-progress", (time: number) => {
       // time in ms
@@ -114,12 +133,12 @@ const QuestionsDialog = () => {
     await recordPluginRef.current.startRecording();
   };
 
-  // Stop recording
-  const handleStopRecording = () => {
-    recordPluginRef.current?.stopRecording();
-    setIsRecording(false);
-    setIsPaused(false);
-  };
+  // Stop recording and save audio
+const handleStopRecording = async () => {
+  recordPluginRef.current?.stopRecording();
+  setIsRecording(false);
+  setIsPaused(false);
+};
 
   // Pause/Resume recording
   const handlePauseResume = () => {
@@ -190,7 +209,9 @@ const QuestionsDialog = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="w-50 -mt-4">Get Started</Button>
+        <Button className="w-60 -mt-4 bg-gradient-to-r from-red-700 via-pink-700 to-yellow-600 text-white shadow-xl backdrop-blur-md border-none hover:scale-105 transition-transform">
+          Get Started
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
