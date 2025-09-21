@@ -87,7 +87,3 @@ export default function Home() {
     </main>
   );
 }
-
-"What qualities are you looking for in a partner?"
-"What are your hobbies and interests?"
-"How would your friends describe you to a stranger?"

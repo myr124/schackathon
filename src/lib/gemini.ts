@@ -147,7 +147,33 @@ function createWavHeader(dataLength: number, options: WavConversionOptions) {
   return buffer;
 }
 
-export async function runGemini(input: string) {
+interface ChatMessage {
+  role: "user" | "model" | "system";
+  content: string;
+}
+
+function buildPromptFromHistory(
+  history: ChatMessage[] | undefined,
+  input: string
+) {
+  const MAX_TURNS = 8;
+  const turns = Array.isArray(history) ? history.slice(-MAX_TURNS) : [];
+  const lines: string[] = [];
+  for (const m of turns) {
+    const role =
+      m.role === "model"
+        ? "Assistant"
+        : m.role === "system"
+        ? "System"
+        : "User";
+    lines.push(`${role}: ${m.content}`);
+  }
+  lines.push(`User: ${input}`);
+  lines.push("Assistant:");
+  return lines.join("\n");
+}
+
+export async function runGemini(input: string, history?: ChatMessage[]) {
   collectedTexts.length = 0;
   audioParts.length = 0;
   const ai = new GoogleGenAI({
@@ -191,8 +217,10 @@ export async function runGemini(input: string) {
     config,
   });
 
+  const prompt = buildPromptFromHistory(history, input);
+
   session.sendClientContent({
-    turns: [input],
+    turns: [prompt],
   });
 
   await handleTurn();
