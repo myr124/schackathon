@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Heart, Home, MessageCircle } from "lucide-react";
+import { Heart, Home, LogInIcon, MessageCircle, User } from "lucide-react";
 
 function NavButton({
     href,
@@ -36,12 +36,12 @@ function NavButton({
 
 export default function HeaderNav() {
     return (
-        <nav className="flex items-center gap-20">
-            <NavButton href="/"><Home></Home></NavButton>
-            <NavButton href="/matches"><Heart></Heart></NavButton>
-            <NavButton href="/messages"><MessageCircle></MessageCircle></NavButton>
-            <NavButton href="/matches"><Heart></Heart></NavButton>
-            <NavButton href="/messages"><MessageCircle></MessageCircle></NavButton>
+        <nav className="flex items-center gap-6">
+            <NavButton href="/"><Home /></NavButton>
+            <NavButton href="/matches"><Heart /></NavButton>
+            <NavButton href="/messages"><MessageCircle /></NavButton>
+            <NavButton href="/login"><LogInIcon></LogInIcon></NavButton>
+            <NavButton href="/account"><User></User></NavButton>
         </nav>
     );
 }
