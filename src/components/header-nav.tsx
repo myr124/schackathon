@@ -40,8 +40,6 @@ export default function HeaderNav() {
             <NavButton href="/"><Home></Home></NavButton>
             <NavButton href="/matches"><Heart></Heart></NavButton>
             <NavButton href="/messages"><MessageCircle></MessageCircle></NavButton>
-            <NavButton href="/matches"><Heart></Heart></NavButton>
-            <NavButton href="/messages"><MessageCircle></MessageCircle></NavButton>
         </nav>
     );
 }
