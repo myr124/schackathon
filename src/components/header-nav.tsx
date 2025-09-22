@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { Heart, Home, LogInIcon, MessageCircle, Sparkles, User } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import dynamic from "next/dynamic";
+const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), { ssr: false });
 
 function NavButton({
     href,
@@ -65,6 +67,7 @@ export default function HeaderNav() {
             ) : (
                 <NavButton href="/login"><LogInIcon /></NavButton>
             )}
+            <ThemeToggle />
         </nav>
     );
 }

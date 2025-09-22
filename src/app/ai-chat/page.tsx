@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import FadeInOnView from "@/components/FadeInOnView";
+import { cn } from "@/lib/utils";
 import { io, Socket } from "socket.io-client";
 
 type ChatMessage = { role: "user" | "model" | "system"; content: string };
@@ -34,6 +36,23 @@ export default function Home() {
     const lastUtteranceRef = useRef<string>("");
 
     const fullTranscript = [finals.join(" ").trim(), interim.trim()].filter(Boolean).join(" ");
+
+    // Auto-connect on mount, cleanup on unmount
+    useEffect(() => {
+        void startLive();
+        return () => {
+            try {
+                mediaRecorderRef.current?.stop();
+            } catch { }
+            try {
+                if (socketRef.current) {
+                    socketRef.current.emit("stt:stop");
+                    socketRef.current.disconnect();
+                }
+            } catch { }
+            cleanupStream();
+        };
+    }, []);
 
     async function startLive() {
         try {
@@ -192,8 +211,8 @@ export default function Home() {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buf = "";
-        let receivedAny = false;
         let replyChunks: string[] = [];
+        let gotText = false;
 
         ensureAudioContext();
         scheduledAtRef.current = 0;
@@ -218,7 +237,6 @@ export default function Home() {
                     }
 
                     if (obj.type === "audio" && obj.data) {
-                        receivedAny = true;
                         setStatus("speaking");
                         try {
                             await enqueueAudioChunk(obj.data, obj.mime || "audio/L16; rate=16000");
@@ -226,7 +244,7 @@ export default function Home() {
                             console.warn("Failed to enqueue audio chunk:", e);
                         }
                     } else if (obj.type === "text" && typeof obj.text === "string") {
-                        receivedAny = true;
+                        gotText = true;
                         replyChunks.push(obj.text);
                         setTexts((prev) => [...prev, obj.text]);
                     } else if (obj.type === "error") {
@@ -240,7 +258,7 @@ export default function Home() {
 
                         let replyText = replyChunks.join(" ").trim();
 
-                        if (!receivedAny) {
+                        if (!gotText) {
                             try {
                                 const r2 = await fetch("/api/gemini", {
                                     method: "POST",
@@ -526,18 +544,32 @@ export default function Home() {
 
     return (
         <main className="container mx-auto px-4 py-10">
-            <h1 className="mb-4 text-2xl font-semibold">Home</h1>
 
-            <div className="flex gap-3 items-center">
-                {!recording ? (
-                    <Button onClick={startLive} disabled={connecting}>
-                        {connecting ? "Connecting..." : "Start Listening"}
-                    </Button>
-                ) : (
-                    <Button onClick={stopLiveAndRunGemini} variant="destructive">
-                        Stop and Process
-                    </Button>
-                )}
+            <div className="flex items-center justify-center py-6">
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (!recording && !connecting) {
+                            void startLive();
+                        }
+                    }}
+                    disabled={connecting}
+                    className={cn(
+                        "h-28 w-28 rounded-full border-[3px] flex items-center justify-center transition-all",
+                        connecting ? "opacity-60" : "",
+                        status === "listening"
+                            ? "bg-blue-50 ring-4 ring-blue-300 animate-pulse"
+                            : status === "processing"
+                                ? "bg-amber-50 ring-4 ring-amber-300 animate-pulse"
+                                : status === "speaking"
+                                    ? "bg-green-50 ring-4 ring-green-300 animate-pulse"
+                                    : "bg-gray-50 ring-2 ring-gray-200"
+                    )}
+                    aria-label="Live talk microphone"
+                    title={connecting ? "Connecting..." : status === "idle" ? "Tap to start" : status}
+                >
+                    <div className="h-16 w-16 rounded-full bg-black/80" />
+                </button>
             </div>
 
             {status !== "idle" ? (
@@ -562,9 +594,11 @@ export default function Home() {
                 <div className="mt-6 space-y-2">
                     <h2 className="font-medium">Gemini Response</h2>
                     {texts.map((t, i) => (
-                        <p key={i} className="whitespace-pre-wrap text-sm">
-                            {t}
-                        </p>
+                        <FadeInOnView key={i} delayMs={i * 50} durationMs={400}>
+                            <p className="whitespace-pre-wrap text-sm">
+                                {t}
+                            </p>
+                        </FadeInOnView>
                     ))}
                 </div>
             ) : null}

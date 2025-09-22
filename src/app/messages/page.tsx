@@ -11,6 +11,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import FadeInOnView from "@/components/FadeInOnView";
 
 type DM = {
     id: number;
@@ -245,10 +246,10 @@ export default function MessagesPage() {
                 </CardFooter>
             </Card>
 
-            <Card className="bg-white">
+            <Card>
                 <CardHeader className="flex flex-row items-center gap-3">
                     <div
-                        className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-700"
+                        className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground"
                         aria-hidden="true"
                     >
                         {recipientEmail ? (recipientEmail[0]?.toUpperCase?.() ?? "?") : "?"}
@@ -289,37 +290,39 @@ export default function MessagesPage() {
                                                     {dateStr}
                                                 </li>
                                             ) : null}
-                                            <li
-                                                className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}
-                                            >
-                                                {showAvatar ? (
-                                                    <div
-                                                        className="h-6 w-6 shrink-0 rounded-full bg-gray-200 text-[10px] font-medium text-gray-700 flex items-center justify-center"
-                                                        title={recipientEmail}
-                                                        aria-hidden="true"
-                                                    >
-                                                        {initials}
+                                            <FadeInOnView delayMs={idx * 40}>
+                                                <li
+                                                    className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}
+                                                >
+                                                    {showAvatar ? (
+                                                        <div
+                                                            className="h-6 w-6 shrink-0 rounded-full bg-muted text-[10px] font-medium text-muted-foreground flex items-center justify-center"
+                                                            title={recipientEmail}
+                                                            aria-hidden="true"
+                                                        >
+                                                            {initials}
+                                                        </div>
+                                                    ) : (
+                                                        !mine ? <div className="h-6 w-6 shrink-0" aria-hidden="true" /> : null
+                                                    )}
+                                                    <div className="max-w-[75%] flex flex-col">
+                                                        <div
+                                                            className={`px-3 py-2 text-sm shadow ${mine
+                                                                ? "bg-primary text-primary-foreground"
+                                                                : "bg-muted text-foreground"
+                                                                } ${isLastOfGroup ? (mine ? "rounded-2xl rounded-br-sm" : "rounded-2xl rounded-bl-sm") : "rounded-2xl"}`}
+                                                            title={new Date(m.created_at).toLocaleString()}
+                                                        >
+                                                            <div className="whitespace-pre-wrap">{m.content}</div>
+                                                        </div>
+                                                        {isLastOfGroup ? (
+                                                            <span className="mt-1 text-[10px] text-muted-foreground self-end">
+                                                                {time}
+                                                            </span>
+                                                        ) : null}
                                                     </div>
-                                                ) : (
-                                                    !mine ? <div className="h-6 w-6 shrink-0" aria-hidden="true" /> : null
-                                                )}
-                                                <div className="max-w-[75%] flex flex-col">
-                                                    <div
-                                                        className={`px-3 py-2 text-sm shadow ${mine
-                                                            ? "bg-blue-500 text-white"
-                                                            : "bg-gray-100 text-gray-900"
-                                                            } ${isLastOfGroup ? (mine ? "rounded-2xl rounded-br-sm" : "rounded-2xl rounded-bl-sm") : "rounded-2xl"}`}
-                                                        title={new Date(m.created_at).toLocaleString()}
-                                                    >
-                                                        <div className="whitespace-pre-wrap">{m.content}</div>
-                                                    </div>
-                                                    {isLastOfGroup ? (
-                                                        <span className="mt-1 text-[10px] text-muted-foreground self-end">
-                                                            {time}
-                                                        </span>
-                                                    ) : null}
-                                                </div>
-                                            </li>
+                                                </li>
+                                            </FadeInOnView>
                                         </React.Fragment>
                                     );
                                 })}

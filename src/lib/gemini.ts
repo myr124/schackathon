@@ -44,16 +44,17 @@ async function waitMessage(): Promise<LiveServerMessage> {
 const audioParts: string[] = [];
 const collectedTexts: string[] = [];
 function handleModelTurn(message: LiveServerMessage) {
-  if (message.serverContent?.modelTurn?.parts) {
-    const part = message.serverContent?.modelTurn?.parts?.[0];
+  const parts = message.serverContent?.modelTurn?.parts;
+  if (!parts || parts.length === 0) return;
 
-    if (part?.fileData) {
-      console.log(`File: ${part?.fileData.fileUri}`);
+  for (const part of parts) {
+    if (part?.fileData?.fileUri) {
+      console.log(`File: ${part.fileData.fileUri}`);
     }
 
     if (part?.inlineData) {
       const fileName = "audio.wav";
-      const inlineData = part?.inlineData;
+      const inlineData = part.inlineData;
 
       audioParts.push(inlineData?.data ?? "");
 
@@ -61,7 +62,7 @@ function handleModelTurn(message: LiveServerMessage) {
       saveBinaryFile(fileName, buffer);
     }
 
-    if (part?.text) {
+    if (typeof part?.text === "string" && part.text.length > 0) {
       collectedTexts.push(part.text);
       console.log(part.text);
     }
@@ -75,6 +76,16 @@ function saveBinaryFile(fileName: string, content: Buffer) {
       return;
     }
     console.log(`Appending stream content to file ${fileName}.`);
+  });
+}
+
+function saveTextFile(fileName: string, content: string) {
+  writeFile(fileName, content, "utf8", (err) => {
+    if (err) {
+      console.error(`Error writing file ${fileName}:`, err);
+      return;
+    }
+    console.log(`Writing text transcript to file ${fileName}.`);
   });
 }
 
@@ -183,7 +194,7 @@ export async function runGemini(input: string, history?: ChatMessage[]) {
   const model = "models/gemini-2.0-flash-live-001";
 
   const config = {
-    responseModalities: [Modality.AUDIO],
+    responseModalities: [Modality.AUDIO, Modality.TEXT],
     mediaResolution: MediaResolution.MEDIA_RESOLUTION_MEDIUM,
     speechConfig: {
       voiceConfig: {
@@ -225,6 +236,72 @@ export async function runGemini(input: string, history?: ChatMessage[]) {
 
   await handleTurn();
 
+  // Also save a text transcript alongside the audio for convenience
+  const transcript = collectedTexts.join("\n");
+  if (transcript.trim()) {
+    saveTextFile("audio.wav.txt", transcript);
+  }
+
   session.close();
+  return { texts: collectedTexts };
+}
+
+export async function runGeminiText(input: string, history?: ChatMessage[]) {
+  collectedTexts.length = 0;
+  audioParts.length = 0;
+
+  const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+  });
+
+  const model = "models/gemini-2.0-flash-live-001";
+
+  const config = {
+    responseModalities: [Modality.TEXT],
+    mediaResolution: MediaResolution.MEDIA_RESOLUTION_MEDIUM,
+    speechConfig: {
+      voiceConfig: {
+        prebuiltVoiceConfig: {
+          voiceName: "Zephyr",
+        },
+      },
+    },
+    contextWindowCompression: {
+      triggerTokens: "25600",
+      slidingWindow: { targetTokens: "12800" },
+    },
+  };
+
+  session = await ai.live.connect({
+    model,
+    callbacks: {
+      onopen: function () {
+        console.debug("Opened (text-only)");
+      },
+      onmessage: function (message: LiveServerMessage) {
+        responseQueue.push(message);
+      },
+      onerror: function (e: ErrorEvent) {
+        console.debug("Error:", e.message);
+      },
+      onclose: function (e: CloseEvent) {
+        console.debug("Close:", e.reason);
+      },
+    },
+    config,
+  });
+
+  const prompt = buildPromptFromHistory(history, input);
+
+  session.sendClientContent({
+    turns: [prompt],
+  });
+
+  await handleTurn();
+
+  try {
+    session.close();
+  } catch {}
+
   return { texts: collectedTexts };
 }

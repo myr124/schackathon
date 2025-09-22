@@ -1,5 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
+import FadeInOnView from "@/components/FadeInOnView";
+import Link from "next/link";
+import CreateDateDialog from "@/components/CreateDateDialog";
 
 type GeoPoint = {
     type: "Point";
@@ -13,7 +15,7 @@ type Photo = {
 
 type Prompt = {
     text: string;
-    audioUrl: string;
+    audioUrl?: string;
 };
 
 type VoiceProfile = {
@@ -41,12 +43,12 @@ const users: UserDoc[] = [
         email: "eric@example.com",
         location: { type: "Point", coordinates: [-73.935242, 40.73061] },
         photos: [
-            { url: "https://media.tenor.com/VqKq93bEsIQAAAAe/you-sure-about-that.png", order: 0 },
-            { url: "https://picsum.photos/seed/eric/400/400", order: 1 },
+            { url: "https://randomuser.me/api/portraits/men/32.jpg", order: 0 },
+            { url: "https://randomuser.me/api/portraits/men/12.jpg", order: 1 },
         ],
         voiceProfile: {
             prompts: [
-                { text: "Introduce yourself in one sentence.", audioUrl: "/audio/eric-intro.mp3" },
+                { text: "Introduce yourself in one sentence." },
             ],
             personalityProfile:
                 "Tech enthusiast and weekend hiker. Into good coffee and exploring new places.",
@@ -61,12 +63,12 @@ const users: UserDoc[] = [
         email: "ava@example.com",
         location: { type: "Point", coordinates: [-118.243683, 34.052235] },
         photos: [
-            { url: "https://picsum.photos/seed/ava/400/400", order: 0 },
-            { url: "https://picsum.photos/seed/ava2/400/400", order: 1 },
+            { url: "https://randomuser.me/api/portraits/women/68.jpg", order: 0 },
+            { url: "https://randomuser.me/api/portraits/women/22.jpg", order: 1 },
         ],
         voiceProfile: {
             prompts: [
-                { text: "What are you passionate about?", audioUrl: "/audio/ava-passions.mp3" },
+                { text: "What are you passionate about?" },
             ],
             personalityProfile:
                 "Curious, outdoorsy, and into good coffee. Always down to try new food spots.",
@@ -81,12 +83,12 @@ const users: UserDoc[] = [
         email: "noah@example.com",
         location: { type: "Point", coordinates: [-122.419418, 37.774929] },
         photos: [
-            { url: "https://picsum.photos/seed/noah/400/400", order: 1 },
-            { url: "https://picsum.photos/seed/noah-primary/400/400", order: 0 },
+            { url: "https://randomuser.me/api/portraits/men/45.jpg", order: 1 },
+            { url: "https://randomuser.me/api/portraits/men/37.jpg", order: 0 },
         ],
         voiceProfile: {
             prompts: [
-                { text: "Tell me about your ideal weekend.", audioUrl: "/audio/noah-weekend.mp3" },
+                { text: "Tell me about your ideal weekend." },
             ],
             personalityProfile:
                 "Movie nights and trail adventures. Looking for someone to join on both.",
@@ -101,19 +103,59 @@ const users: UserDoc[] = [
         email: "mia@example.com",
         location: { type: "Point", coordinates: [-87.623177, 41.881832] },
         photos: [
-            { url: "https://picsum.photos/seed/mia/400/400", order: 0 },
-            { url: "https://picsum.photos/seed/mia2/400/400", order: 2 },
-            { url: "https://picsum.photos/seed/mia1/400/400", order: 1 },
+            { url: "https://randomuser.me/api/portraits/women/47.jpg", order: 0 },
+            { url: "https://randomuser.me/api/portraits/women/14.jpg", order: 2 },
+            { url: "https://randomuser.me/api/portraits/women/55.jpg", order: 1 },
         ],
         voiceProfile: {
             prompts: [
-                { text: "Describe a memorable trip.", audioUrl: "/audio/mia-trip.mp3" },
+                { text: "Describe a memorable trip." },
             ],
             personalityProfile:
                 "Art lover and amateur photographer. Big on music festivals and spontaneous road trips.",
         },
         interests: ["art", "photography", "music"],
         friends: [],
+    },
+    {
+        _id: "6740c3a8f1c2a1bde0000005",
+        userId: "liam26",
+        name: "Liam",
+        email: "liam@example.com",
+        location: { type: "Point", coordinates: [-71.0589, 42.3601] },
+        photos: [
+            { url: "https://randomuser.me/api/portraits/men/28.jpg", order: 0 },
+            { url: "https://randomuser.me/api/portraits/men/83.jpg", order: 1 },
+        ],
+        voiceProfile: {
+            prompts: [
+                { text: "What's your perfect Saturday?" },
+            ],
+            personalityProfile:
+                "Foodie and weekend cyclist. Loves live music and discovering neighborhood gems.",
+        },
+        interests: ["cycling", "food", "live music"],
+        friends: ["eric22"],
+    },
+    {
+        _id: "6740c3a8f1c2a1bde0000006",
+        userId: "zoe20",
+        name: "Zoe",
+        email: "zoe@example.com",
+        location: { type: "Point", coordinates: [-122.3321, 47.6062] },
+        photos: [
+            { url: "https://randomuser.me/api/portraits/women/62.jpg", order: 0 },
+            { url: "https://randomuser.me/api/portraits/women/19.jpg", order: 1 },
+        ],
+        voiceProfile: {
+            prompts: [
+                { text: "Share a favorite travel memory." },
+            ],
+            personalityProfile:
+                "Curious traveler and coffee shop connoisseur. Into art exhibits and cozy bookstores.",
+        },
+        interests: ["travel", "art", "coffee", "books"],
+        friends: ["mia21"],
     },
 ];
 
@@ -123,38 +165,50 @@ function getPrimaryPhoto(photos: Photo[]): Photo | undefined {
 }
 
 export default function Page() {
+    const you = users.find((u) => u.userId === "eric22")!;
     return (
         <div>
-            <div className="m-5 text-center text-2xl font-bold">Matches</div>
+            <h1 className="m-5 text-center font-bold">Matches</h1>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {users.map((u) => {
+                {users.map((u, idx) => {
                     const primary = getPrimaryPhoto(u.photos);
                     return (
-                        <Card key={u._id} className="mt-5">
-                            <CardContent className="flex flex-col items-center justify-center p-6">
-                                {primary ? (
-                                    <Image
-                                        alt={`${u.name} profile photo`}
-                                        className="mb-3 rounded-xl"
-                                        height={200}
-                                        width={200}
-                                        src={primary.url}
-                                    />
-                                ) : (
-                                    <div className="mb-3 size-[200px] rounded-xl bg-muted" />
-                                )}
-                                <p className="text-2xl font-bold">{u.name}</p>
-                                <p className="mt-2 text-center text-lg">
-                                    {u.voiceProfile.personalityProfile}
-                                </p>
-                                {u.interests?.length ? (
-                                    <p className="mt-2 text-sm text-muted-foreground">
-                                        Interests: {u.interests.join(", ")}
-                                    </p>
-                                ) : null}
-                            </CardContent>
-                        </Card>
+                        <FadeInOnView key={u._id} delayMs={idx * 80}>
+                            <Link href={`/matches/${u.userId}`} className="block">
+                                <div className="mt-5 overflow-hidden rounded-xl">
+                                    <div className="relative aspect-[4/5] w-full">
+                                        <div className="absolute top-3 right-3 z-10">
+                                            <CreateDateDialog you={you} match={u} label="Create Date" />
+                                        </div>
+                                        {primary ? (
+                                            <Image
+                                                alt={`${u.name} profile photo`}
+                                                src={primary.url}
+                                                fill
+                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                                priority={idx === 0}
+                                                className="object-cover"
+                                            />
+                                        ) : (
+                                            <div className="absolute inset-0 bg-muted" />
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                                            <h1 className="font-bold drop-shadow">{u.name}</h1>
+                                            <p className="mt-1 text-sm drop-shadow">
+                                                {u.voiceProfile.personalityProfile}
+                                            </p>
+                                            {u.interests?.length ? (
+                                                <p className="mt-2 text-xs opacity-90">
+                                                    Interests: {u.interests.join(", ")}
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        </FadeInOnView>
                     );
                 })}
             </div>

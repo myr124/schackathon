@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       new URL("https://media.tenor.com/**"),
       new URL("https://picsum.photos/**"),
+      new URL("https://randomuser.me/**"),
     ],
   },
 };

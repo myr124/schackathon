@@ -84,7 +84,7 @@ export async function POST(req: Request) {
           const model = "models/gemini-2.0-flash-live-001";
 
           const config = {
-            responseModalities: [Modality.AUDIO],
+            responseModalities: [Modality.AUDIO, Modality.TEXT],
             mediaResolution: MediaResolution.MEDIA_RESOLUTION_MEDIUM,
             speechConfig: {
               voiceConfig: {

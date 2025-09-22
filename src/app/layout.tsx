@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import HeaderNav from "@/components/header-nav";
-import { Nunito } from "next/font/google";
+import { Inter } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
+import PageFade from "@/components/PageFade";
 
 
-const nunito = Nunito({
+const inter = Inter({
     subsets: ['latin']
+})
+
+const playfair = Playfair_Display({
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700', '800', '900'],
+    style: ['normal', 'italic'],
+    variable: '--font-heading',
+    display: 'swap',
 })
 
 
@@ -20,14 +30,19 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={nunito.className}>
+        <html lang="en" suppressHydrationWarning className={`${inter.className} ${playfair.variable}`}>
             <body>
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `!function(){try{var d=document.documentElement;var s=localStorage.getItem('theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s?s:(m?'dark':'light');if(t==='dark')d.classList.add('dark');else d.classList.remove('dark');d.style.colorScheme=t;}catch(e){}}();`,
+                    }}
+                />
                 <header className="border-b">
                     <div className="container mx-auto flex h-24 items-center justify-center px-4">
                         <HeaderNav />
                     </div>
                 </header>
-                {children}
+                <PageFade durationMs={500}>{children}</PageFade>
             </body>
         </html>
     );
